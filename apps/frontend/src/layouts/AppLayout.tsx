@@ -9,8 +9,8 @@ export function AppLayout({ children }: PropsWithChildren) {
       <div className="flex flex-1">
         <Sidebar />
 
-        <main className="flex-1 p-2 md:p-4 pb-0">
-          <div className="rounded-2xl border border-primary-pale bg-white/90 p-6 shadow-sm min-h-[calc(100vh-88px)] h-full">
+        <main className="flex-1 p-2 md:p-4 pb-0!">
+          <div className="rounded-t-2xl border border-b-0 border-primary-pale bg-white/90 p-6 pb-4 shadow-sm min-h-[calc(100vh-88px)] h-full flex flex-col">
             {children}
           </div>
         </main>

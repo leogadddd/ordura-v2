@@ -1,16 +1,16 @@
-import React, { forwardRef, InputHTMLAttributes } from "react";
+import React, { forwardRef, TextareaHTMLAttributes } from "react";
 
-export type InputProps = {
+export type TextareaProps = {
   label?: string | React.ReactNode;
   error?: string;
-} & InputHTMLAttributes<HTMLInputElement>;
+} & TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 const baseStyles =
-  "w-full rounded-xl border border-primary-lighter px-4 py-3 bg-white text-gray-900 placeholder:text-gray-400";
+  "w-full rounded-xl border border-primary-lighter px-4 py-3 bg-white text-gray-900 placeholder:text-gray-400 resize-none";
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className = "", ...props }, ref) => {
-    const errorStyles = error ? " border-red-500 focus:ring-red-500" : "";
+    const errorStyles = error ? " border-red-500" : "";
     return (
       <div className="w-full space-y-2">
         {label && (
@@ -21,7 +21,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <input
+        <textarea
           ref={ref}
           className={`${baseStyles}${errorStyles} ${className}`.trim()}
           {...props}
@@ -36,4 +36,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = "Input";
+Textarea.displayName = "Textarea";

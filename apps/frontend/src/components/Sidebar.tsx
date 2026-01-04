@@ -29,16 +29,21 @@ export function Sidebar() {
         isExpanded ? "w-48 md:px-1.5" : "w-14 md:items-center md:px-1.5"
       }`}
     >
-      <div className="flex items-center justify-end mb-2">
+      <div className="mb-1">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1.5 rounded-md text-gray-600 hover:bg-primary-pale"
+          className={`flex items-center gap-2.5 rounded-lg h-12 text-gray-600 hover:bg-primary-pale ${
+            isExpanded ? "px-3 w-full" : "w-11 px-3 justify-center"
+          }`}
           title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isExpanded ? (
-            <ChevronLeftIcon className="w-4 h-4" />
+            <>
+              <ChevronLeftIcon className="w-5 h-5" />
+              {/* <span className="text-sm font-medium">Collapse</span> */}
+            </>
           ) : (
-            <ChevronRightIcon className="w-4 h-4" />
+            <ChevronRightIcon className="w-5 h-5" />
           )}
         </button>
       </div>
@@ -51,7 +56,7 @@ export function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-md h-12 ${
+                `flex items-center gap-2.5 rounded-lg h-12 ${
                   isExpanded ? "px-3" : "w-11 px-3"
                 } ${
                   isActive

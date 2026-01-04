@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -73,18 +74,20 @@ export function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-3 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              variant="primary"
+              className="w-full shadow-md hover:shadow-lg"
+              size="lg"
             >
               {isLoading ? "Signing in..." : "Sign In"}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 text-center">

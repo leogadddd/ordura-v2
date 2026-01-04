@@ -5,6 +5,7 @@ import {
   MinusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
 
 interface CartItem {
   id: string;
@@ -90,7 +91,7 @@ export function POSPage() {
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl"
             />
           </div>
 
@@ -100,7 +101,7 @@ export function POSPage() {
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
-                  className="border border-gray-200 rounded-md hover:border-primary hover:bg-primary-pale text-left flex overflow-hidden h-full"
+                  className="border border-gray-200 rounded-xl hover:border-primary hover:bg-primary-pale text-left flex overflow-hidden h-full"
                 >
                   <div className="w-20 h-20 bg-primary-lighter flex items-center justify-center">
                     <div className="text-2xl"></div>
@@ -120,7 +121,7 @@ export function POSPage() {
         </div>
 
         {/* Cart Section */}
-        <div className="flex flex-col bg-gray-50 rounded-md border border-gray-200 min-h-0 h-full">
+        <div className="flex flex-col bg-gray-50 rounded-xl border border-gray-200 min-h-0 h-full">
           <h2 className="text-lg font-bold p-4 pb-3">Cart</h2>
 
           <div className="flex-1 overflow-y-auto min-h-0">
@@ -204,19 +205,23 @@ export function POSPage() {
           </div>
 
           <div className="p-4 pt-0 flex gap-2">
-            <button
+            <Button
               onClick={clearCart}
               disabled={cart.length === 0}
-              className="w-[30%] bg-red-500 text-white py-3 rounded-md font-semibold hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              variant="destructive"
+              size="lg"
+              className="w-[30%]"
             >
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               disabled={cart.length === 0}
-              className="w-[70%] bg-primary text-white py-3 rounded-md font-semibold hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              className="w-[70%]"
             >
               Place Order
-            </button>
+            </Button>
           </div>
         </div>
       </div>

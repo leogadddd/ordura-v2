@@ -24,4 +24,14 @@
   *:focus {
     outline: none;
   }
+
+  /* Ensure borders are not clipped */
+  .overflow-hidden {
+    overflow: hidden;
+  }
+
+  /* Allow proper rendering of rounded borders */
+  [class*="rounded"] {
+    overflow: visible;
+  }
 }
