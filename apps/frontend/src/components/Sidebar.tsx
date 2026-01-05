@@ -9,6 +9,7 @@ import {
   Cog6ToothIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
@@ -17,6 +18,7 @@ const navItems = [
   { label: "Products", to: "/products", icon: CubeIcon },
   { label: "Inventory", to: "/inventory", icon: Squares2X2Icon },
   { label: "Reports", to: "/reports", icon: DocumentChartBarIcon },
+  { label: "Register", to: "/register", icon: UserPlusIcon },
   { label: "Settings", to: "/settings", icon: Cog6ToothIcon },
 ];
 
@@ -32,7 +34,7 @@ export function Sidebar() {
       <div className="mb-1">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`flex items-center gap-2.5 rounded-lg h-12 text-gray-600 hover:bg-primary-pale ${
+          className={`flex items-center gap-2.5 rounded-xl h-12 text-gray-600 hover:bg-primary-pale ${
             isExpanded ? "px-3 w-full" : "w-11 px-3 justify-center"
           }`}
           title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
@@ -56,7 +58,7 @@ export function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg h-12 ${
+                `flex items-center gap-2.5 rounded-xl h-12 ${
                   isExpanded ? "px-3" : "w-11 px-3"
                 } ${
                   isActive

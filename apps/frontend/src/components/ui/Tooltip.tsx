@@ -3,15 +3,9 @@ import { PropsWithChildren, useState } from "react";
 interface TooltipProps extends PropsWithChildren {
   content: string;
   position?: "top" | "bottom" | "left" | "right";
-  className?: string;
 }
 
-export function Tooltip({
-  content,
-  children,
-  position = "top",
-  className = "",
-}: TooltipProps) {
+export function Tooltip({ content, children, position = "top" }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const positionClasses = {
@@ -23,7 +17,7 @@ export function Tooltip({
 
   return (
     <div
-      className={"relative inline-block " + className}
+      className="relative"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >

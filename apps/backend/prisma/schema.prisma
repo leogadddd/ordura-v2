@@ -59,3 +59,37 @@ enum UserRole {
   MANAGER
   CASHIER
 }
+
+// ============================================
+// Product Management
+// ============================================
+
+model Product {
+  id           String   @id
+  sku          String   @unique // Auto-generated SKU
+  name         String
+  category     String
+  description  String?
+  notes        String?
+  
+  // Pricing
+  cost         Float    // Cost price
+  sellingPrice Float    // Selling price
+  
+  // Status
+  status       ProductStatus @default(ACTIVE)
+  isDraft      Boolean  @default(false)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([sku])
+  @@index([category])
+  @@index([status])
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+}

@@ -9,13 +9,16 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "BROWSER=chromium prisma studio",
+    "seed:products": "tsx src/scripts/seed-products.ts",
+    "delete:products": "tsx src/scripts/delete-products.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.1.0",
     "@fastify/jwt": "^9.1.0",
     "@prisma/adapter-pg": "^7.2.0",

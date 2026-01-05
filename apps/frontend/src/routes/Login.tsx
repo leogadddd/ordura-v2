@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { login } from "../api/authApi";
+import { useAuthStore } from "../store/authStore";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,22 +11,31 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const setUser = useAuthStore((state) => state.setUser);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    const user = email.trim().toLowerCase();
-    const pass = password.trim();
+    try {
+      const response = await login({
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    if (user === "admin" && pass === "1234") {
+      // Save user to store
+      if (response.data?.user) {
+        setUser(response.data.user);
+      }
+
+      // Redirect to dashboard on success
       navigate("/dashboard", { replace: true });
-    } else {
-      setError("Invalid credentials. Try admin / 1234.");
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   return (
@@ -94,10 +105,10 @@ export function LoginPage() {
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <a
-                href="#"
+                href="/register"
                 className="text-primary hover:text-primary-light font-medium transition-colors"
               >
-                Contact your administrator
+                Register here
               </a>
             </p>
           </div>

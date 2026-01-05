@@ -1,8 +1,32 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/store/authStore";
+import { logout } from "@/api/authApi";
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const clearUser = useAuthStore((state) => state.clearUser);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // Even if logout fails on backend, clear local state
+      console.error("Logout error:", error);
+    } finally {
+      clearUser();
+      navigate("/login", { replace: true });
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user?.username || "User";
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
@@ -10,13 +34,19 @@ export function DashboardPage() {
           <h1 className="text-3xl font-semibold text-primary">Dashboard</h1>
           <p className="text-gray-600">Quick snapshot of your POS activity.</p>
         </div>
-        <Button
-          onClick={() => navigate("/login", { replace: true })}
-          variant="secondary"
-          size="sm"
-        >
-          Logout
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-sm font-medium text-gray-900">
+              {getUserDisplayName()}
+            </p>
+            <p className="text-xs text-gray-500 capitalize">
+              {user?.role || "User"}
+            </p>
+          </div>
+          <Button onClick={handleLogout} variant="secondary" size="sm">
+            Logout
+          </Button>
+        </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

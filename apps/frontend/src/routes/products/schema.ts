@@ -5,7 +5,6 @@ export const productFormSchema = z.object({
     .string()
     .min(1, "Product name is required")
     .max(100, "Name is too long"),
-  sku: z.string().min(1, "SKU is required").max(50, "SKU is too long"),
   category: z.string().min(1, "Category is required"),
   description: z.string().optional(),
   cost: z
@@ -21,6 +20,7 @@ export const productFormSchema = z.object({
       message:
         "Selling price must be a valid number greater than or equal to 0",
     }),
+  notes: z.string().optional(),
 });
 
 export type ProductFormData = z.infer<typeof productFormSchema>;

@@ -1,11 +1,107 @@
-import { useState } from "react";
-import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { useCallback, useMemo, useState } from "react";
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { ProductFormModal } from "@/components/modals/ProductFormModal";
 import { Button } from "@/components/ui/Button";
+import { DataGrid } from "@/components/ui/DataGrid";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
+import { showToast } from "@/lib/toast";
+import type { Product } from "@/api/productsApi";
+import { getProductColumnDefs } from "./column-def";
 
 export function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Product[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
+  const { data, isLoading, error, refetch } = useProducts({
+    search: searchQuery || undefined,
+    includeDrafts: true,
+  });
+
+  const deleteProductMutation = useDeleteProduct();
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
+  const handleEdit = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await deleteProductMutation.mutateAsync(id);
+        showToast.success("Product deleted successfully!");
+      } catch (error: any) {
+        console.error("Failed to delete product:", error);
+        const errorMessage =
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to delete product";
+        showToast.error(String(errorMessage));
+        throw error;
+      }
+    },
+    [deleteProductMutation]
+  );
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedRows.length === 0) return;
+    setIsBulkDeleteOpen(true);
+  }, [selectedRows.length]);
+
+  const confirmBulkDelete = useCallback(async () => {
+    try {
+      await Promise.all(
+        selectedRows.map((product) =>
+          deleteProductMutation.mutateAsync(product.id)
+        )
+      );
+      showToast.success(
+        `${selectedRows.length} products deleted successfully!`
+      );
+      setSelectedRows([]);
+      setIsBulkDeleteOpen(false);
+    } catch (error: any) {
+      console.error("Failed to delete products:", error);
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to delete products";
+      showToast.error(String(errorMessage));
+    }
+  }, [selectedRows, deleteProductMutation]);
+
+  const handleSelectionChanged = useCallback((selectedRows: Product[]) => {
+    setSelectedRows(selectedRows);
+  }, []);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProduct(undefined);
+  };
+
+  const columnDefs = useMemo(
+    () => getProductColumnDefs(handleEdit, handleDelete),
+    [handleEdit, handleDelete]
+  );
+
+  const products = data?.data?.items || [];
 
   return (
     <div className="h-full flex flex-col">
@@ -28,9 +124,37 @@ export function ProductsPage() {
             />
           </div>
           <Button
+            onClick={handleRefresh}
+            variant="secondary"
+            size="md"
+            className="flex items-center gap-2 whitespace-nowrap h-10"
+            title="Refresh products"
+            disabled={isRefreshing}
+          >
+            <ArrowPathIcon
+              className="w-4 h-4"
+              style={{
+                animation: isRefreshing ? "spin 1s linear infinite" : "none",
+              }}
+            />
+            Refresh
+          </Button>
+          {selectedRows.length > 0 && (
+            <Button
+              onClick={handleBulkDelete}
+              variant="destructive"
+              size="md"
+              className="flex items-center gap-2 whitespace-nowrap"
+              disabled={deleteProductMutation.isPending}
+            >
+              <TrashIcon className="w-4 h-4" />
+              Delete Selected ({selectedRows.length})
+            </Button>
+          )}
+          <Button
             onClick={() => setIsModalOpen(true)}
             variant="primary"
-            size="sm"
+            size="md"
             className="flex items-center gap-2 whitespace-nowrap"
           >
             <PlusIcon className="w-4 h-4" />
@@ -39,34 +163,46 @@ export function ProductsPage() {
         </div>
       </header>
 
-      <div className="flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-        <div className="overflow-auto flex-1">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100 sticky top-0">
-              <tr>
-                <th className="text-left p-3 font-semibold">Product Name</th>
-                <th className="text-left p-3 font-semibold">SKU</th>
-                <th className="text-left p-3 font-semibold">Category</th>
-                <th className="text-right p-3 font-semibold">Price</th>
-                <th className="text-right p-3 font-semibold">Stock</th>
-                <th className="text-center p-3 font-semibold">Status</th>
-                <th className="text-center p-3 font-semibold w-20">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-500">
-                  No products found. Click "Add Product" to get started.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div
+        className={`flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col transition-opacity ${
+          isRefreshing ? "opacity-50" : "opacity-100"
+        }`}
+      >
+        {error ? (
+          <div className="flex flex-1 items-center justify-center text-red-500 text-sm">
+            Error loading products. Please try again.
+          </div>
+        ) : (
+          <DataGrid<Product>
+            rowData={products}
+            columnDefs={columnDefs}
+            loading={isLoading || isRefreshing}
+            noRowsMessage={
+              'No products found. Click "Add Product" to get started.'
+            }
+            height="100%"
+            rowSelection={{ mode: "multiRow" }}
+            onSelectionChanged={handleSelectionChanged}
+          />
+        )}
       </div>
 
       <ProductFormModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
+        product={selectedProduct}
+      />
+
+      <ConfirmDialog
+        isOpen={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onConfirm={confirmBulkDelete}
+        title={`Delete ${selectedRows.length} Products`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected products? This action cannot be undone.`}
+        confirmText="Delete All"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        isLoading={deleteProductMutation.isPending}
       />
     </div>
   );

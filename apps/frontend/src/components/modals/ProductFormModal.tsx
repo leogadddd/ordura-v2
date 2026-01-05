@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Button } from "@/components/ui/Button";
 import { productFormSchema } from "@/routes/products/schema";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useCreateProduct, useUpdateProduct } from "@/hooks/useProducts";
+import { showToast } from "@/lib/toast";
+import type { Product } from "@/api/productsApi";
 
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product?: any;
+  product?: Product;
 }
 
 export function ProductFormModal({
@@ -19,15 +22,38 @@ export function ProductFormModal({
   product,
 }: ProductFormModalProps) {
   const [formData, setFormData] = useState({
-    name: product?.name || "",
-    category: product?.category || "",
-    description: product?.description || "",
-    cost: product?.cost || "",
-    sellingPrice: product?.sellingPrice || "",
-    notes: product?.notes || "",
+    name: "",
+    category: "",
+    description: "",
+    cost: "",
+    sellingPrice: "",
+    notes: "",
   });
 
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "OUT_OF_STOCK">(
+    "ACTIVE"
+  );
+
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+
+  // Reset form when modal opens/closes or product changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: product?.name || "",
+        category: product?.category || "",
+        description: product?.description || "",
+        cost: product?.cost?.toString() || "",
+        sellingPrice: product?.sellingPrice?.toString() || "",
+        notes: product?.notes || "",
+      });
+      setStatus(product?.status || "ACTIVE");
+      setErrors({});
+    }
+  }, [isOpen, product]);
 
   const cost = parseFloat(formData.cost) || 0;
   const sellingPrice = parseFloat(formData.sellingPrice) || 0;
@@ -61,23 +87,114 @@ export function ProductFormModal({
     }
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      console.log("Save product:", formData);
-      onClose();
+  // Check if form is valid without showing errors
+  const isFormValid = (): boolean => {
+    try {
+      productFormSchema.parse(formData);
+      return true;
+    } catch {
+      return false;
     }
   };
 
-  const handleDraft = () => {
-    console.log("Save as draft:", formData);
-    onClose();
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const productData = {
+        name: formData.name,
+        category: formData.category,
+        description: formData.description || undefined,
+        notes: formData.notes || undefined,
+        cost: parseFloat(formData.cost),
+        sellingPrice: parseFloat(formData.sellingPrice),
+        status: status,
+        isDraft: false,
+      };
+
+      console.log("Saving product:", productData);
+
+      if (product) {
+        // Update existing product
+        const result = await updateProductMutation.mutateAsync({
+          id: product.id,
+          data: productData,
+        });
+        console.log("Update result:", result);
+        showToast.success("Product updated successfully!");
+      } else {
+        // Create new product
+        const result = await createProductMutation.mutateAsync(productData);
+        console.log("Create result:", result);
+        showToast.success("Product created successfully!");
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error("Failed to save product:", error);
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to save product";
+      setErrors({ submit: String(errorMessage) });
+      showToast.error(String(errorMessage));
+    }
   };
+
+  const handleDraft = async () => {
+    if (!formData.name || !formData.category) {
+      setErrors({
+        submit: "Product name and category are required for drafts",
+      });
+      showToast.warning("Product name and category are required for drafts");
+      return;
+    }
+
+    try {
+      const productData = {
+        name: formData.name,
+        category: formData.category,
+        description: formData.description || undefined,
+        notes: formData.notes || undefined,
+        cost: parseFloat(formData.cost) || 0,
+        sellingPrice: parseFloat(formData.sellingPrice) || 0,
+        status: status,
+        isDraft: true,
+      };
+
+      if (product) {
+        await updateProductMutation.mutateAsync({
+          id: product.id,
+          data: productData,
+        });
+        showToast.success("Draft updated successfully!");
+      } else {
+        await createProductMutation.mutateAsync(productData);
+        showToast.success("Draft saved successfully!");
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error("Failed to save draft:", error);
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to save draft";
+      setErrors({ submit: String(errorMessage) });
+      showToast.error(String(errorMessage));
+    }
+  };
+
+  const isLoading =
+    createProductMutation.isPending || updateProductMutation.isPending;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={product ? "Edit Product" : "Add New Product"}
+      title={product ? "Edit Product" : "Add A New Product"}
+      icon={<PlusIcon className="w-6 h-6" />}
     >
       <div className="flex flex-col h-full">
         <div className="flex-1 overflow-auto space-y-6 pb-4 pr-4 pt-4">
@@ -137,10 +254,7 @@ export function ProductFormModal({
                   />
                 </Tooltip>
                 <div className="col-span-2">
-                  <Tooltip
-                    content="Additional product information (optional)"
-                    className="w-full"
-                  >
+                  <Tooltip content="Additional product information (optional)">
                     <Textarea
                       label="Description"
                       placeholder="Optional description"
@@ -148,7 +262,8 @@ export function ProductFormModal({
                       onChange={(e) =>
                         handleChange("description", e.target.value)
                       }
-                      rows={2}
+                      rows={3}
+                      className=""
                     />
                   </Tooltip>
                 </div>
@@ -177,21 +292,6 @@ export function ProductFormModal({
             </div>
             <div className="w-[70%] space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Tooltip content="The amount you pay for this product">
-                  <Input
-                    label={
-                      <span>
-                        Cost Price <span className="text-red-500">*</span>
-                      </span>
-                    }
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.cost}
-                    onChange={(e) => handleChange("cost", e.target.value)}
-                    error={errors.cost}
-                    required
-                  />
-                </Tooltip>
                 <Tooltip content="The price customers pay for this product">
                   <Input
                     label={
@@ -206,6 +306,21 @@ export function ProductFormModal({
                       handleChange("sellingPrice", e.target.value)
                     }
                     error={errors.sellingPrice}
+                    required
+                  />
+                </Tooltip>
+                <Tooltip content="The amount you pay for this product">
+                  <Input
+                    label={
+                      <span>
+                        Cost Price <span className="text-red-500">*</span>
+                      </span>
+                    }
+                    type="number"
+                    placeholder="0.00"
+                    value={formData.cost}
+                    onChange={(e) => handleChange("cost", e.target.value)}
+                    error={errors.cost}
                     required
                   />
                 </Tooltip>
@@ -280,10 +395,7 @@ export function ProductFormModal({
               </p>
             </div>
             <div className="w-[70%]">
-              <Tooltip
-                content="Additional product notes (optional)"
-                className="w-full"
-              >
+              <Tooltip content="Additional product notes (optional)">
                 <Textarea
                   //   label="Notes"
                   placeholder="E.g., Supplier info, storage instructions, etc."
@@ -297,16 +409,72 @@ export function ProductFormModal({
         </div>
 
         {/* Action Buttons - Pinned to Bottom */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 bg-white sticky pb-1 bottom-0">
-          <Button onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button onClick={handleDraft} variant="secondary">
-            Save as Draft
-          </Button>
-          <Button onClick={handleSave} variant="primary">
-            {product ? "Update Product" : "Add Product"}
-          </Button>
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-200 bg-white sticky pb-1 bottom-0">
+          <div className="flex items-center gap-4">
+            {/* Status Controls */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="activeStatus"
+                checked={status === "ACTIVE"}
+                onChange={(e) =>
+                  setStatus(e.target.checked ? "ACTIVE" : "INACTIVE")
+                }
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label
+                htmlFor="activeStatus"
+                className="text-sm text-gray-700 cursor-pointer"
+              >
+                Active
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="outOfStock"
+                checked={status === "OUT_OF_STOCK"}
+                onChange={(e) =>
+                  setStatus(e.target.checked ? "OUT_OF_STOCK" : "ACTIVE")
+                }
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label
+                htmlFor="outOfStock"
+                className="text-sm text-gray-700 cursor-pointer"
+              >
+                Out of Stock
+              </label>
+            </div>
+            {errors.submit && (
+              <p className="text-sm text-red-600">{errors.submit}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={onClose} variant="outline" disabled={isLoading}>
+              Cancel
+            </Button>
+            {!product && (
+              <Button
+                onClick={handleDraft}
+                variant="secondary"
+                disabled={isLoading || !isFormValid()}
+              >
+                {isLoading ? "Saving..." : "Save as Draft"}
+              </Button>
+            )}
+            <Button
+              onClick={handleSave}
+              variant="primary"
+              disabled={isLoading || !isFormValid()}
+            >
+              {isLoading
+                ? "Saving..."
+                : product
+                ? "Update Product"
+                : "Add Product"}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>
